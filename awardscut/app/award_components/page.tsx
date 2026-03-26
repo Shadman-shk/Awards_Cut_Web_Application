@@ -1,6 +1,6 @@
 import React from 'react'
 
-const DashComp = () => {
+const AwardComponents = () => {
   return (
     <div>
       
@@ -8,4 +8,4 @@ const DashComp = () => {
   )
 }
 
-export default DashComp
+export default AwardComponents
