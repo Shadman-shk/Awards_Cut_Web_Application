@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+function All_Templates() {
   return (
     <div>
-       Awards Cut Project
+      
     </div>
   )
 }
 
-export default Home
+export default All_Templates

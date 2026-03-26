@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+function Corporate() {
   return (
     <div>
-       Awards Cut Project
+      
     </div>
   )
 }
 
-export default Home
+export default Corporate

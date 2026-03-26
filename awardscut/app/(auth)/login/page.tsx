@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+const Login = () => {
   return (
     <div>
-       Awards Cut Project
+      <h1>Login</h1>
     </div>
   )
 }
 
-export default Home
+export default Login

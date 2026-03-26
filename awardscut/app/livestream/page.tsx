@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+const Livestream = () => {
   return (
     <div>
-       Awards Cut Project
+      
     </div>
   )
 }
 
-export default Home
+export default Livestream
