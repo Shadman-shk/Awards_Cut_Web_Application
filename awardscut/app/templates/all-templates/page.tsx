@@ -1,11 +1,11 @@
-import React from 'react'
+import TemplatesGrid from './TemplatesGrid';
 
-function All_Templates() {
+export default function AllTemplates() {
   return (
-    <div>
-      
+    <div className="min-h-screen bg-background p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
+        <TemplatesGrid />
+      </div>
     </div>
-  )
+  );
 }
-
-export default All_Templates
