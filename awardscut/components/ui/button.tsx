@@ -20,6 +20,11 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        hero: "bg-primary text-primary-foreground hover:brightness-110 shadow-md hover:shadow-lg hover:shadow-primary/20 transform hover:-translate-y-0.5",
+        gold: "bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md hover:shadow-lg transform hover:-translate-y-0.5",
+        heroOutline: "border-2 border-primary/30 bg-transparent text-foreground hover:bg-primary/5 hover:border-primary/50",
+        dark: "bg-card text-foreground hover:bg-muted border border-border",
+        glass: "backdrop-blur-lg bg-background/50 border border-border text-foreground hover:bg-background/80",
       },
       size: {
         default:
