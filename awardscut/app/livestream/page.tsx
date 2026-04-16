@@ -1,11 +1,5 @@
-import React from 'react'
+import LivestreamManager from "@/components/livestream/LivestreamManager";
 
-const Livestream = () => {
-  return (
-    <div>
-      
-    </div>
-  )
+export default function LivestreamPage() {
+  return <LivestreamManager />;
 }
-
-export default Livestream
