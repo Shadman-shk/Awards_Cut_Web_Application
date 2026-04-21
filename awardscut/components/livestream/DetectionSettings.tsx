@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, Check, ChevronDown, Minus, Plus, AlertTriangle } from "lucide-react";
-// Using basic HTML elements instead of missing UI components
-// import { Switch } from "@/components/ui/switch";
-// import { Slider } from "@/components/ui/slider";
-// import {
-//   Collapsible,
-//   CollapsibleContent,
-//   CollapsibleTrigger,
-// } from "@/components/ui/collapsible";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import {
   useDetectionSettings,
@@ -141,14 +140,13 @@ export function DetectionSettings() {
               <span className="text-sm font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">{settings.confidence_threshold}%</span>
               <span className="text-sm text-muted-foreground">99% — Fewer, higher quality</span>
             </div>
-            <input
-              type="range"
-              value={settings.confidence_threshold}
+            <Slider
+              value={[settings.confidence_threshold]}
               min={60}
               max={99}
               step={1}
-              onChange={(e) => updateSettings({ confidence_threshold: Number(e.target.value) })}
-              className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
+              onValueChange={([v]) => updateSettings({ confidence_threshold: v })}
+              className="w-full"
             />
             <p className="text-xs text-muted-foreground text-center">
               At {settings.confidence_threshold}% confidence — approx {estimate.low}–{estimate.high} clips per hour
@@ -320,21 +318,16 @@ export function DetectionSettings() {
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">{layer.desc}</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={enabled}
-                        onChange={(e) => {
-                          if (layer.key === "speech" && !e.target.checked) setSpeechWarning(true);
-                          else setSpeechWarning(false);
-                          updateSettings({
-                            layers_enabled: { ...settings.layers_enabled, [layer.key]: e.target.checked },
-                          });
-                        }}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={(checked) => {
+                        if (layer.key === "speech" && !checked) setSpeechWarning(true);
+                        else setSpeechWarning(false);
+                        updateSettings({
+                          layers_enabled: { ...settings.layers_enabled, [layer.key]: checked },
+                        });
+                      }}
+                    />
                   </div>
                 </div>
               );
@@ -397,78 +390,73 @@ export function DetectionSettings() {
         </div>
 
         {/* ROW 5: Duration Overrides (Collapsible) */}
-        <div>
-          <button
-            onClick={() => setOverridesOpen(!overridesOpen)}
-            className="flex items-center gap-2 text-sm text-primary hover:underline w-full"
-          >
+        <Collapsible open={overridesOpen} onOpenChange={setOverridesOpen}>
+          <CollapsibleTrigger className="flex items-center gap-2 text-sm text-primary hover:underline w-full">
             <ChevronDown className={cn("h-4 w-4 transition-transform", overridesOpen && "rotate-180")} />
             ⏱ Customise clip duration per type
-          </button>
-          {overridesOpen && (
-            <div className="pt-3">
-              <div className="rounded-xl border border-border/50 overflow-hidden">
-                <div className="grid grid-cols-4 gap-0 text-xs font-medium text-muted-foreground px-4 py-2 bg-muted/30 border-b border-border/30">
-                  <span>Moment Type</span>
-                  <span className="text-center">Before</span>
-                  <span className="text-center">After</span>
-                  <span className="text-center">Total</span>
-                </div>
-                {Object.entries(OVERRIDE_DEFAULTS).map(([type, defaults]) => {
-                  const override = settings.clip_duration_overrides[type] || defaults;
-                  return (
-                    <div key={type} className="grid grid-cols-4 gap-0 items-center px-4 py-2 border-b border-border/20 last:border-0">
-                      <span className="text-xs text-foreground">{type}</span>
-                      <div className="flex justify-center">
-                        <input
-                          type="number"
-                          value={override.before}
-                          min={5}
-                          max={60}
-                          onChange={(e) => {
-                            const before = Number(e.target.value) || 15;
-                            updateSettings({
-                              clip_duration_overrides: {
-                                ...settings.clip_duration_overrides,
-                                [type]: { ...override, before },
-                              },
-                            });
-                          }}
-                          className="w-[52px] bg-muted border border-border rounded px-1.5 py-1 text-center text-xs text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                      <div className="flex justify-center">
-                        <input
-                          type="number"
-                          value={override.after}
-                          min={5}
-                          max={60}
-                          onChange={(e) => {
-                            const after = Number(e.target.value) || 15;
-                            updateSettings({
-                              clip_duration_overrides: {
-                                ...settings.clip_duration_overrides,
-                                [type]: { ...override, after },
-                              },
-                            });
-                          }}
-                          className="w-[52px] bg-muted border border-border rounded px-1.5 py-1 text-center text-xs text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                      <span className="text-center text-xs text-muted-foreground">{override.before + override.after}s</span>
-                    </div>
-                  );
-                })}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
+            <div className="rounded-xl border border-border/50 overflow-hidden">
+              <div className="grid grid-cols-4 gap-0 text-xs font-medium text-muted-foreground px-4 py-2 bg-muted/30 border-b border-border/30">
+                <span>Moment Type</span>
+                <span className="text-center">Before</span>
+                <span className="text-center">After</span>
+                <span className="text-center">Total</span>
               </div>
-              <button
-                onClick={() => updateSettings({ clip_duration_overrides: {} })}
-                className="mt-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
-              >
-                Reset to defaults
-              </button>
+              {Object.entries(OVERRIDE_DEFAULTS).map(([type, defaults]) => {
+                const override = settings.clip_duration_overrides[type] || defaults;
+                return (
+                  <div key={type} className="grid grid-cols-4 gap-0 items-center px-4 py-2 border-b border-border/20 last:border-0">
+                    <span className="text-xs text-foreground">{type}</span>
+                    <div className="flex justify-center">
+                      <input
+                        type="number"
+                        value={override.before}
+                        min={5}
+                        max={60}
+                        onChange={(e) => {
+                          const before = Number(e.target.value) || 15;
+                          updateSettings({
+                            clip_duration_overrides: {
+                              ...settings.clip_duration_overrides,
+                              [type]: { ...override, before },
+                            },
+                          });
+                        }}
+                        className="w-[52px] bg-muted border border-border rounded px-1.5 py-1 text-center text-xs text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <div className="flex justify-center">
+                      <input
+                        type="number"
+                        value={override.after}
+                        min={5}
+                        max={60}
+                        onChange={(e) => {
+                          const after = Number(e.target.value) || 15;
+                          updateSettings({
+                            clip_duration_overrides: {
+                              ...settings.clip_duration_overrides,
+                              [type]: { ...override, after },
+                            },
+                          });
+                        }}
+                        className="w-[52px] bg-muted border border-border rounded px-1.5 py-1 text-center text-xs text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <span className="text-center text-xs text-muted-foreground">{override.before + override.after}s</span>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
+            <button
+              onClick={() => updateSettings({ clip_duration_overrides: {} })}
+              className="mt-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Reset to defaults
+            </button>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* FOOTER: Settings Summary */}
         <div className="p-4 rounded-xl bg-muted/30 border border-border/30 text-xs text-muted-foreground space-y-1">

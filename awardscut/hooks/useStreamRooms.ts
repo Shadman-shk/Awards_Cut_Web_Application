@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface StreamRoom {
@@ -19,73 +19,112 @@ export interface StreamRoom {
 }
 
 export function useStreamRooms() {
-  const { user } = useUser();
   const [rooms, setRooms] = useState<StreamRoom[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRooms = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // TODO: Fetch from database when available
-    // For now, return empty array
-    setRooms([]);
+    const { data, error } = await supabase
+      .from("stream_rooms")
+      .select("*")
+      .eq("user_id", user.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
+
+    if (data) setRooms(data as unknown as StreamRoom[]);
     setLoading(false);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     fetchRooms();
-    // TODO: Set up realtime subscriptions when database is available
+
+    const channel = supabase
+      .channel("stream-rooms-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "stream_rooms" }, () => {
+        fetchRooms();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchRooms]);
 
   const createRoom = useCallback(async (name: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ title: "Auth required", variant: "destructive" });
       return null;
     }
 
+    // Create Livepeer stream
     try {
-      // TODO: Create Livepeer stream and save to database
-      console.log("Creating room:", name);
+      const { data: streamData, error: fnErr } = await supabase.functions.invoke("mux-stream", {
+        body: { action: "create" },
+      });
 
-      // Mock room data
-      const mockRoom: StreamRoom = {
-        id: `room_${Date.now()}`,
-        user_id: user.id,
-        name,
-        livepeer_stream_id: `stream_${Date.now()}`,
-        livepeer_stream_key: `sk_${Math.random().toString(36).substring(2)}`,
-        livepeer_playback_id: `playback_${Date.now()}`,
-        rtmp_url: "rtmps://rtmp.livepeer.com/live",
-        status: "idle",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        deleted_at: null,
-      };
+      if (fnErr || streamData?.error) {
+        toast({ title: "Stream creation failed", description: streamData?.error || fnErr?.message, variant: "destructive" });
+        return null;
+      }
 
-      setRooms(prev => [...prev, mockRoom]);
+      const { data: room, error: insertErr } = await supabase
+        .from("stream_rooms")
+        .insert({
+          user_id: user.id,
+          name,
+          livepeer_stream_id: streamData.stream_id,
+          livepeer_stream_key: streamData.stream_key,
+          livepeer_playback_id: streamData.playback_id,
+          rtmp_url: streamData.rtmps_url || streamData.rtmp_url,
+          status: "idle",
+        } as any)
+        .select()
+        .single();
+
+      if (insertErr) {
+        toast({ title: "Failed to save room", description: insertErr.message, variant: "destructive" });
+        return null;
+      }
+
       toast({ title: "✅ Room Created", description: `"${name}" is ready for streaming.` });
-      return mockRoom;
+      await fetchRooms();
+      return room as unknown as StreamRoom;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       return null;
     }
-  }, [user]);
+  }, [fetchRooms]);
 
   const deleteRoom = useCallback(async (room: StreamRoom) => {
-    // TODO: Delete Livepeer stream and soft delete from database
-    console.log("Deleting room:", room.id);
+    // Delete Livepeer stream (gracefully handle 404)
+    if (room.livepeer_stream_id) {
+      try {
+        await supabase.functions.invoke("mux-stream", {
+          body: { action: "delete", stream_id: room.livepeer_stream_id },
+        });
+      } catch {
+        // Best effort
+      }
+    }
 
-    setRooms(prev => prev.filter(r => r.id !== room.id));
+    // Soft delete
+    await supabase
+      .from("stream_rooms")
+      .update({ deleted_at: new Date().toISOString(), status: "gone" } as any)
+      .eq("id", room.id);
+
     toast({ title: "Room Deleted", description: `"${room.name}" has been removed.` });
-  }, []);
+    await fetchRooms();
+  }, [fetchRooms]);
 
   const updateRoomName = useCallback(async (roomId: string, name: string) => {
-    // TODO: Update in database
-    setRooms(prev => prev.map(r => r.id === roomId ? { ...r, name } : r));
-  }, []);
+    await supabase.from("stream_rooms").update({ name } as any).eq("id", roomId);
+    await fetchRooms();
+  }, [fetchRooms]);
 
   const updateRoomStatus = useCallback(async (roomId: string, status: string) => {
-    // TODO: Update in database
+    await supabase.from("stream_rooms").update({ status } as any).eq("id", roomId);
     setRooms(prev => prev.map(r => r.id === roomId ? { ...r, status } : r));
   }, []);
 
@@ -93,13 +132,24 @@ export function useStreamRooms() {
     if (!room.livepeer_stream_id) return null;
 
     try {
-      // TODO: Check health via API
-      console.log("Checking room health:", room.id);
-      return room.status;
+      const { data } = await supabase.functions.invoke("mux-stream", {
+        body: { action: "status", stream_id: room.livepeer_stream_id },
+      });
+
+      if (data?.status === "gone") {
+        await updateRoomStatus(room.id, "gone");
+        return "gone";
+      }
+
+      const newStatus = data?.status === "active" ? "live" : "idle";
+      if (room.status !== newStatus) {
+        await updateRoomStatus(room.id, newStatus);
+      }
+      return newStatus;
     } catch {
       return null;
     }
-  }, []);
+  }, [updateRoomStatus]);
 
   return {
     rooms,

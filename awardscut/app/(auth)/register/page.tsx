@@ -1,11 +1,3 @@
-import React from 'react'
+import Signup from "@/page-components/Signup";
 
-const Register = () => {
-  return (
-    <div>
-       <h1>Register</h1>
-    </div>
-  )
-}
-
-export default Register
+export default Signup;

@@ -1,11 +1,5 @@
-import React from 'react'
+"use client";
 
-const dashboard = () => {
-  return (
-    <div>
-       <h1>Dashboard</h1>
-    </div>
-  )
-}
+import Dashboard from "@/page-components/Dashboard";
 
-export default dashboard
+export default Dashboard;

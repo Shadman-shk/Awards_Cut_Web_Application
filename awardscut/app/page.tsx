@@ -1,11 +1,5 @@
-import React from 'react'
+"use client";
 
-function Home() {
-  return (
-    <div>
-       Awards Cut Project
-    </div>
-  )
-}
+import Index from "@/page-components/Index";
 
-export default Home
+export default Index;

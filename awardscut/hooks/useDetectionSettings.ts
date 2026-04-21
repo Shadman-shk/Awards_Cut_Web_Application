@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface DetectionSettings {
   sensitivity_mode: "conservative" | "balanced" | "aggressive";
@@ -60,18 +61,40 @@ const SENSITIVITY_PRESETS: Record<DetectionSettings["sensitivity_mode"], { thres
 export { ALL_MOMENT_TYPES, DEFAULT_MOMENT_TYPES, SENSITIVITY_PRESETS };
 
 export function useDetectionSettings() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<DetectionSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const indicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load settings on mount - for now, just use defaults since we don't have database
+  // Load settings on mount
   useEffect(() => {
     if (!user) return;
-    // TODO: Load from database when available
-    setLoading(false);
+    (async () => {
+      const { data } = await supabase
+        .from("detection_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        setSettings({
+          sensitivity_mode: data.sensitivity_mode as DetectionSettings["sensitivity_mode"],
+          confidence_threshold: data.confidence_threshold,
+          detection_interval_seconds: data.detection_interval_seconds,
+          clip_duration_seconds: data.clip_duration_seconds,
+          clip_before_seconds: data.clip_before_seconds,
+          clip_after_seconds: data.clip_after_seconds,
+          max_clips_per_stream: data.max_clips_per_stream,
+          auto_clip_enabled: data.auto_clip_enabled,
+          layers_enabled: data.layers_enabled as DetectionSettings["layers_enabled"],
+          moment_types_enabled: data.moment_types_enabled as string[],
+          clip_duration_overrides: data.clip_duration_overrides as DetectionSettings["clip_duration_overrides"],
+        });
+      }
+      setLoading(false);
+    })();
   }, [user]);
 
   // Debounced save
@@ -81,8 +104,16 @@ export function useDetectionSettings() {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
       saveTimeoutRef.current = setTimeout(async () => {
-        // TODO: Save to database when available
-        console.log("Saving detection settings:", newSettings);
+        await supabase.from("detection_settings").upsert(
+          {
+            user_id: user.id,
+            ...newSettings,
+            layers_enabled: newSettings.layers_enabled as any,
+            moment_types_enabled: newSettings.moment_types_enabled as any,
+            clip_duration_overrides: newSettings.clip_duration_overrides as any,
+          },
+          { onConflict: "user_id" }
+        );
 
         setSavedIndicator(true);
         if (indicatorTimeoutRef.current) clearTimeout(indicatorTimeoutRef.current);

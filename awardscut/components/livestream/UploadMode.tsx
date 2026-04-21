@@ -7,7 +7,7 @@ import { Upload, Video, FileVideo, CheckCircle2, Play, Loader2 } from "lucide-re
 import { toast } from "@/hooks/use-toast";
 import { useLivestreamStore } from "@/stores/livestreamStore";
 import { Progress } from "@/components/ui/progress";
-import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UploadModeProps {
   onVideoReady: (filename: string, videoUrl: string) => void;
@@ -20,7 +20,6 @@ export function UploadMode({ onVideoReady }: UploadModeProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const { uploadedObjectUrl: uploadedVideoUrl, setUploadedFile } = useLivestreamStore();
-  const { user } = useUser();
   const setUploadedVideoUrl = (url: string | null) => setUploadedFile(null, url);
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -45,35 +44,58 @@ export function UploadMode({ onVideoReady }: UploadModeProps) {
       return;
     }
 
-    if (!user) {
-      toast({ title: "Not authenticated", description: "Please log in to upload videos.", variant: "destructive" });
-      return;
-    }
-
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      // Simulate upload progress
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Not authenticated", description: "Please log in to upload videos.", variant: "destructive" });
+        setUploading(false);
+        return;
+      }
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop() || 'mp4';
+      const filePath = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
+      // Simulate progress while uploading
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 5, 95));
+        setUploadProgress(prev => Math.min(prev + 5, 85));
       }, 200);
 
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('ceremony-videos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       clearInterval(progressInterval);
+
+      if (uploadError) {
+        toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+        setUploading(false);
+        setUploadProgress(0);
+        return;
+      }
+
+      setUploadProgress(95);
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('ceremony-videos')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
       setUploadProgress(100);
-
-      // Create object URL for local preview
-      const objectUrl = URL.createObjectURL(file);
-
-      setUploadedVideoUrl(objectUrl);
+      setUploadedVideoUrl(publicUrl);
       setUploadedFileName(file.name);
       setUploading(false);
 
       toast({ title: "Video uploaded", description: `${file.name} uploaded and ready for AI analysis.` });
-      onVideoReady(file.name, objectUrl);
+      onVideoReady(file.name, publicUrl);
     } catch (err: any) {
       setUploading(false);
       setUploadProgress(0);

@@ -1,11 +1,5 @@
-import React from 'react'
+"use client";
 
-const Payment = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+import Payment from "@/page-components/Payment";
 
-export default Payment
+export default Payment;

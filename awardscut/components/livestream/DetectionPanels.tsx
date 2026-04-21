@@ -12,35 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-// Mock implementation for clip download - replace with actual implementation when backend is ready
-const downloadClipAsBlob = async (url: string, filename: string) => {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
-  } catch (error) {
-    console.error('Download failed:', error);
-    throw error;
-  }
-};
-
-const downloadAllClips = async (items: Array<{url: string, filename: string, id: string}>, toast: any) => {
-  for (const item of items) {
-    try {
-      await downloadClipAsBlob(item.url, item.filename);
-      toast({ title: "Downloaded", description: `${item.filename} downloaded successfully.` });
-    } catch (error) {
-      toast({ title: "Download failed", description: `Failed to download ${item.filename}.`, variant: "destructive" });
-    }
-  }
-};
+import { downloadClipAsBlob, downloadAllClips } from "@/lib/clipDownload";
 
 export interface DetectedMoment {
   id: string;

@@ -13,25 +13,25 @@ import {
 } from "lucide-react";
 import { downloadClipAsBlob, downloadAllClips } from "@/lib/clipDownload";
 import { useDetectionSettings } from "@/hooks/useDetectionSettings";
-// import {
-//   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-//   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-// } from "@/components/ui/alert-dialog";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-// } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useStreamRooms, type StreamRoom } from "@/hooks/useStreamRooms";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useClipPipeline } from "@/hooks/useClipPipeline";
-import { HLSPlayer } from "@/components/livestream/HLSPlayer";
-import { UploadMode } from "@/components/livestream/UploadMode";
+import { HLSPlayer } from "./HLSPlayer";
+import { UploadMode } from "./UploadMode";
 import { ScreenCaptureMode } from "./ScreenCaptureMode";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { DetectedMoment, GeneratedClip } from "@/components/livestream/DetectionPanels";
+import type { DetectedMoment, GeneratedClip } from "./DetectionPanels";
 
 type ClipPipeline = ReturnType<typeof useClipPipeline>;
 
@@ -39,8 +39,8 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
   const { rooms, loading, createRoom, deleteRoom, updateRoomName, checkRoomHealth, updateRoomStatus } = useStreamRooms();
   const [creating, setCreating] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
-  const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StreamRoom | null>(null);
+  const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const hasAutoExpandedRef = useRef(false);
   const expandedPanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -48,7 +48,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
   useEffect(() => {
     if (rooms.length === 0) return;
     const interval = setInterval(() => {
-      rooms.forEach((room: StreamRoom) => {
+      rooms.forEach(room => {
         if (room.livepeer_stream_id && room.status !== "gone") {
           checkRoomHealth(room);
         }
@@ -60,7 +60,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
   useEffect(() => {
     if (hasAutoExpandedRef.current || expandedRoomId || rooms.length === 0 || pipeline.generatedClips.length === 0) return;
 
-    const preferredRoom = rooms.find((room: StreamRoom) => room.status === "live" || room.status === "monitoring") ?? rooms[0];
+    const preferredRoom = rooms.find((room) => room.status === "live" || room.status === "monitoring") ?? rooms[0];
     if (!preferredRoom) return;
 
     hasAutoExpandedRef.current = true;
@@ -78,7 +78,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
   }, [expandedRoomId]);
 
   const openRoomWithClips = () => {
-    const preferredRoom = rooms.find((room: StreamRoom) => room.status === "live" || room.status === "monitoring") ?? rooms[0];
+    const preferredRoom = rooms.find((room) => room.status === "live" || room.status === "monitoring") ?? rooms[0];
     if (preferredRoom) setExpandedRoomId(preferredRoom.id);
   };
 
@@ -116,7 +116,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
     );
   }
 
-  const activePreviewRoomId = expandedRoomId ?? rooms.find((room: StreamRoom) => (
+  const activePreviewRoomId = expandedRoomId ?? rooms.find((room) => (
     room.livepeer_playback_id && (room.status === "live" || room.status === "monitoring")
   ))?.id ?? null;
 
@@ -143,7 +143,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
                 className="w-40 h-9 text-sm bg-muted border-border/50"
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
-              <Button variant="default" size="sm" onClick={handleCreate} disabled={creating}>
+              <Button variant="hero" size="sm" onClick={handleCreate} disabled={creating}>
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Add Room
               </Button>
@@ -164,7 +164,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
                 className="w-48 bg-muted border-border/50"
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
-              <Button variant="default" onClick={handleCreate} disabled={creating}>
+              <Button variant="hero" onClick={handleCreate} disabled={creating}>
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Create Room
               </Button>
@@ -182,6 +182,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
                     isExpanded={expandedRoomId === room.id}
                     previewEnabled={!expandedRoomId && activePreviewRoomId === room.id}
                     onToggleExpand={() => setExpandedRoomId(expandedRoomId === room.id ? null : room.id)}
+                    onDelete={() => setDeleteTarget(room)}
                     onRename={(name) => updateRoomName(room.id, name)}
                   />
                 ))}
@@ -194,7 +195,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
                 <div ref={expandedPanelRef}>
                   <ExpandedRoomPanel
                     key={expandedRoomId}
-                    room={rooms.find((r: StreamRoom) => r.id === expandedRoomId)!}
+                    room={rooms.find(r => r.id === expandedRoomId)!}
                     pipeline={pipeline}
                     onClose={() => setExpandedRoomId(null)}
                     onStatusChange={(status) => updateRoomStatus(expandedRoomId, status)}
@@ -206,8 +207,8 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
         )}
       </div>
 
-      {/* Delete Confirmation - Temporarily disabled */}
-      {/* <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent className="bg-card border-border/50">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">Delete "{deleteTarget?.name}"?</AlertDialogTitle>
@@ -222,7 +223,7 @@ export function StreamRoomsGrid({ pipeline }: { pipeline: ClipPipeline }) {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog> */}
+      </AlertDialog>
     </>
   );
 }
@@ -233,12 +234,14 @@ function StreamRoomCard({
   isExpanded,
   previewEnabled,
   onToggleExpand,
+  onDelete,
   onRename,
 }: {
   room: StreamRoom;
   isExpanded: boolean;
   previewEnabled: boolean;
   onToggleExpand: () => void;
+  onDelete: () => void;
   onRename: (name: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -325,8 +328,7 @@ function StreamRoomCard({
             </Button>
           </div>
         )}
-        {/* Delete functionality temporarily disabled */}
-        {/* <Button
+        <Button
           variant="destructive"
           size="sm"
           className="h-8 px-3 gap-1.5 text-xs font-medium"
@@ -334,7 +336,7 @@ function StreamRoomCard({
         >
           <Trash2 className="h-3.5 w-3.5" />
           Delete Room
-        </Button> */}
+        </Button>
       </div>
     </motion.div>
   );
@@ -404,12 +406,12 @@ function ExpandedRoomPanel({
   };
 
   // Convert pipeline data for display
-  const displayMoments: DetectedMoment[] = pipeline.detectedMoments.map((m: any) => ({
+  const displayMoments: DetectedMoment[] = pipeline.detectedMoments.map((m) => ({
     id: m.id,
     timestamp: m.timestamp,
     type: m.winner_name ? `${m.moment_type} — ${m.award_name || ""}` : m.moment_type,
     confidence: m.confidence_score,
-    clipGenerated: pipeline.generatedClips.some((c: any) => c.moment_id === m.id),
+    clipGenerated: pipeline.generatedClips.some((c) => c.moment_id === m.id),
     winnerName: m.winner_name || undefined,
     category: m.award_name || m.moment_type,
     sourceVideoUrl: m.source_video_url || undefined,
@@ -417,7 +419,7 @@ function ExpandedRoomPanel({
     clipEnd: m.clip_end ?? 30,
   }));
 
-  const displayClips = pipeline.generatedClips.map((c: any) => ({
+  const displayClips = pipeline.generatedClips.map((c) => ({
     id: c.id,
     momentId: c.moment_id || "",
     timestamp: "",
@@ -492,7 +494,7 @@ function ExpandedRoomPanel({
                       <>
                         <Radio className="h-10 w-10 text-muted-foreground opacity-30 mx-auto mb-2" />
                         <p className="text-sm text-muted-foreground">Waiting for encoder…</p>
-                        <p className="text-xs text-muted-foreground">Connect your OBS using the credentials</p>
+                        <p className="text-xs text-muted-foreground">Connect OBS using the credentials</p>
                       </>
                     ) : inputMode === "upload" ? (
                       <>
@@ -662,7 +664,7 @@ function ExpandedRoomPanel({
 
             {inputMode === "upload" && (
               <UploadMode
-                onVideoReady={(filename: string, videoUrl: string) => {
+                onVideoReady={(filename, videoUrl) => {
                   setUploadedVideoUrl(videoUrl);
                   onStatusChange("monitoring");
                   setIsMonitoring(true);
@@ -754,16 +756,16 @@ function ExpandedRoomPanel({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                  {displayClips.filter((c: any) => c.status === "ready").length} ready
+                  {displayClips.filter(c => c.status === "ready").length} ready
                 </span>
-                {displayClips.filter((c: any) => c.status === "ready").length > 1 && (
+                {displayClips.filter(c => c.status === "ready").length > 1 && (
                   <Button
                     variant="secondary"
                     size="sm"
                     className="h-6 text-[10px] px-2"
                     onClick={async () => {
-                      const readyClips = displayClips.filter((c: any) => c.status === "ready" && c.sourceVideoUrl);
-                      const items = readyClips.map((clip: any) => ({
+                      const readyClips = displayClips.filter((c) => c.status === "ready" && c.sourceVideoUrl);
+                      const items = readyClips.map((clip) => ({
                         url: clip.sourceVideoUrl || "",
                         filename: `${clip.category}-${clip.winner}-${clip.format?.replace(/[^a-zA-Z0-9]/g, '')}.mp4`,
                         id: clip.id,
@@ -785,7 +787,7 @@ function ExpandedRoomPanel({
                   <p className="text-[10px]">Clips appear after AI detects moments</p>
                 </div>
               ) : (
-                displayClips.map((clip: any) => (
+                displayClips.map((clip) => (
                   <div key={clip.id} className="p-2 rounded-lg bg-card border border-border/20 flex items-center gap-2">
                     <button
                       type="button"
@@ -821,6 +823,22 @@ function ExpandedRoomPanel({
                     </div>
                     {clip.status === "ready" && (
                       <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => {
+                            if (!clip.sourceVideoUrl) {
+                              toast({ title: "Clip not ready", description: "No generated clip file is available yet.", variant: "destructive" });
+                              return;
+                            }
+                            setPreviewClip({
+                              url: clip.sourceVideoUrl,
+                              title: `${clip.category} — ${clip.winner}`,
+                            });
+                          }}
+                          className="h-7 w-7 rounded-md bg-muted border border-border flex items-center justify-center text-foreground hover:bg-muted/80 transition-colors"
+                          title="Preview clip"
+                        >
+                          <Play className="h-3 w-3" />
+                        </button>
                         <button
                           onClick={() => {
                             if (!clip.sourceVideoUrl) {
@@ -872,37 +890,28 @@ function ExpandedRoomPanel({
         </div>
       </div>
 
-      {/* Preview Modal */}
-      {previewClip && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-border/50 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b border-border/50 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{previewClip.title || "Clip Preview"}</h3>
-              <button
-                onClick={() => setPreviewClip(null)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-4">
-              {previewClip.url ? (
-                previewClip.url.includes(".m3u8") || previewClip.url.includes("/hls/") ? (
-                  <HLSPlayer src={previewClip.url} className="w-full max-h-[70vh] rounded-lg bg-black" />
-                ) : (
-                  <video
-                    src={previewClip.url}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="w-full max-h-[70vh] rounded-lg bg-black"
-                  />
-                )
-              ) : null}
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!previewClip} onOpenChange={(open) => !open && setPreviewClip(null)}>
+        <DialogContent className="max-w-4xl bg-card border-border/50">
+          <DialogHeader>
+            <DialogTitle>{previewClip?.title || "Clip Preview"}</DialogTitle>
+          </DialogHeader>
+          {previewClip?.url ? (
+            previewClip.url.includes(".m3u8") || previewClip.url.includes("/hls/") ? (
+              <div className="aspect-video overflow-hidden rounded-lg bg-black">
+                <HLSPlayer src={previewClip.url} className="w-full h-full object-contain" />
+              </div>
+            ) : (
+              <video
+                src={previewClip.url}
+                controls
+                autoPlay
+                playsInline
+                className="w-full max-h-[70vh] rounded-lg bg-black"
+              />
+            )
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

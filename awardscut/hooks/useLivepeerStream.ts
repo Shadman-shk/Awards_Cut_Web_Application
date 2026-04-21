@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface LivepeerStreamData {
@@ -16,39 +16,32 @@ export interface LivepeerStreamData {
 export type LivepeerConnectionStatus = "disconnected" | "creating" | "ready" | "active" | "error";
 
 export function useLivepeerStream() {
-  const { user } = useUser();
   const [streamData, setStreamData] = useState<LivepeerStreamData | null>(null);
   const [livepeerStatus, setLivepeerStatus] = useState<LivepeerConnectionStatus>("disconnected");
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const createStream = useCallback(async () => {
-    if (!user) {
-      toast({ title: "Authentication required", description: "Please log in to create a stream.", variant: "destructive" });
-      return null;
-    }
-
     setError(null);
     setLivepeerStatus("creating");
 
     try {
-      // TODO: Call stream creation API when available
-      console.log("Creating stream for user:", user.id);
+      const { data, error: fnErr } = await supabase.functions.invoke('mux-stream', {
+        body: { action: 'create' },
+      });
 
-      // Mock stream data for demo
-      const mockData: LivepeerStreamData = {
-        stream_id: `stream_${Date.now()}`,
-        stream_key: `sk_${Math.random().toString(36).substring(2)}`,
-        rtmps_url: "rtmps://rtmp.livepeer.com/live",
-        rtmp_url: "rtmp://rtmp.livepeer.com/live",
-        playback_id: `playback_${Date.now()}`,
-        status: "idle",
-      };
+      if (fnErr || data?.error) {
+        const msg = data?.error || fnErr?.message || "Failed to create stream";
+        setError(msg);
+        setLivepeerStatus("error");
+        toast({ title: "Stream creation failed", description: msg, variant: "destructive" });
+        return null;
+      }
 
-      setStreamData(mockData);
+      setStreamData(data);
       setLivepeerStatus("ready");
       toast({ title: "✅ Stream Created", description: "RTMPS credentials ready. Configure your encoder." });
-      return mockData;
+      return data as LivepeerStreamData;
     } catch (err: any) {
       const msg = err.message || "Unexpected error";
       setError(msg);
@@ -56,17 +49,32 @@ export function useLivepeerStream() {
       toast({ title: "Error", description: msg, variant: "destructive" });
       return null;
     }
-  }, [user]);
+  }, []);
 
   const checkStatus = useCallback(async () => {
     if (!streamData?.stream_id) return null;
 
     try {
-      // TODO: Call status check API when available
-      console.log("Checking stream status:", streamData.stream_id);
+      const { data, error: fnErr } = await supabase.functions.invoke('mux-stream', {
+        body: { action: 'status', stream_id: streamData.stream_id },
+      });
 
-      // Mock status check
-      return { status: streamData.status };
+      if (fnErr || data?.error) return null;
+
+      if (data.status === 'gone') {
+        // Stream no longer exists on Livepeer — clean up local state
+        setStreamData(null);
+        setLivepeerStatus("disconnected");
+        return null;
+      }
+
+      if (data.status === 'active') {
+        setLivepeerStatus("active");
+      } else if (data.status === 'idle') {
+        setLivepeerStatus("ready");
+      }
+
+      return data;
     } catch {
       return null;
     }
@@ -91,8 +99,9 @@ export function useLivepeerStream() {
     if (!streamData?.stream_id) return;
 
     try {
-      // TODO: Call delete API when available
-      console.log("Deleting stream:", streamData.stream_id);
+      await supabase.functions.invoke('mux-stream', {
+        body: { action: 'delete', stream_id: streamData.stream_id },
+      });
     } catch {
       // Best effort
     }
@@ -107,16 +116,19 @@ export function useLivepeerStream() {
     if (!streamData?.stream_id) return;
 
     try {
-      // TODO: Call reset key API when available
-      console.log("Resetting stream key:", streamData.stream_id);
+      const { data } = await supabase.functions.invoke('mux-stream', {
+        body: { action: 'reset_key', stream_id: streamData.stream_id },
+      });
 
-      // Mock key reset
-      const newKey = `sk_${Math.random().toString(36).substring(2)}`;
-      setStreamData(prev => prev ? {
-        ...prev,
-        stream_key: newKey,
-      } : prev);
-      toast({ title: "Stream Key Reset", description: "New stream key generated." });
+      if (data?.stream_key) {
+        setStreamData(prev => prev ? {
+          ...prev,
+          stream_id: data.stream_id || prev.stream_id,
+          stream_key: data.stream_key,
+          playback_id: data.playback_id || prev.playback_id,
+        } : prev);
+        toast({ title: "Stream Key Reset", description: "New stream key generated." });
+      }
     } catch (err: any) {
       toast({ title: "Reset failed", description: err.message, variant: "destructive" });
     }

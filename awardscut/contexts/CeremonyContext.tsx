@@ -50,7 +50,7 @@ const mockCeremonies: Ceremony[] = [
     },
   },
   {
-    id: "2",
+    id: "2", 
     name: "Tech Innovation Summit",
     date: "2026-04-20",
     status: "draft",
@@ -78,7 +78,7 @@ export function CeremonyProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       await new Promise((resolve) => setTimeout(resolve, 500));
       setCeremonies(mockCeremonies);
-
+      
       // Auto-select first ceremony if available
       const savedCeremonyId = localStorage.getItem("selectedCeremonyId");
       if (savedCeremonyId && mockCeremonies.find((c) => c.id === savedCeremonyId)) {
@@ -86,7 +86,7 @@ export function CeremonyProvider({ children }: { children: ReactNode }) {
       } else if (mockCeremonies.length > 0) {
         setSelectedCeremonyId(mockCeremonies[0].id);
       }
-
+      
       setIsLoading(false);
     };
 
@@ -121,7 +121,7 @@ export function CeremonyProvider({ children }: { children: ReactNode }) {
     setCeremonies([...ceremonies, newCeremony]);
     setSelectedCeremonyId(newCeremony.id);
     localStorage.setItem("selectedCeremonyId", newCeremony.id);
-
+    
     return newCeremony;
   };
 

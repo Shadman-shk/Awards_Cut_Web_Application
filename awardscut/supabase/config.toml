@@ -1,0 +1,10 @@
+project_id = "iasrmsmzmuffvneicibi"
+
+[functions.detect-moments]
+verify_jwt = false
+
+[functions.mux-stream]
+verify_jwt = false
+
+[functions.mux-webhook]
+verify_jwt = false

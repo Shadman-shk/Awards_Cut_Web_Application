@@ -1,11 +1,3 @@
-import React from 'react'
+import ForgotPassword from "@/page-components/ForgotPassword";
 
-const Forgot = () => {
-  return (
-    <div>
-      <h1>Forgot Password</h1>
-    </div>
-  )
-}
-
-export default Forgot
+export default ForgotPassword;

@@ -97,6 +97,7 @@ export const HLSPlayer = memo(
         const handleWaiting = () => {
           setBuffering(true);
           clearRecoveryTimers();
+
           stallTimerRef.current = setTimeout(() => {
             seekToLiveEdge();
           }, 2000);
@@ -172,11 +173,13 @@ export const HLSPlayer = memo(
             hls.loadSource(streamSrc);
             if (video) {
               hls.attachMedia(video);
-
-              hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(() => {});
-              });
             }
+
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (video) {
+                video.play().catch(() => {});
+              }
+            });
 
             hls.on(Hls.Events.ERROR, (_event, data) => {
               if (!data.fatal) return;
@@ -211,12 +214,10 @@ export const HLSPlayer = memo(
         initHls();
 
         return () => {
-          if (video) {
-            video.removeEventListener("playing", handlePlaying);
-            video.removeEventListener("waiting", handleWaiting);
-            video.removeEventListener("canplay", handleCanPlay);
-            video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-          }
+          video.removeEventListener("playing", handlePlaying);
+          video.removeEventListener("waiting", handleWaiting);
+          video.removeEventListener("canplay", handleCanPlay);
+          video.removeEventListener("loadedmetadata", handleLoadedMetadata);
           clearInterval(driftInterval);
           clearRecoveryTimers();
           destroyHls();
