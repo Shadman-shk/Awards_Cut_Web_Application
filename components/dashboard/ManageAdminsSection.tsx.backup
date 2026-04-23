@@ -1,0 +1,268 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
+import { useUserRole, AppRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { RoleSkeleton } from "@/components/ui/role-skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Users,
+  UserPlus,
+  Trash2,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Loader2,
+  Mail,
+  Crown,
+  AlertTriangle,
+  RefreshCw,
+  ArrowRightLeft,
+  Bug,
+} from "lucide-react";
+
+interface AdminMember {
+  id: string;
+  email: string;
+  role: AppRole;
+  addedAt: string;
+  userId?: string;
+}
+
+interface PendingInvite {
+  id: string;
+  email: string;
+  role: AppRole;
+  expiresAt: string;
+}
+
+export function ManageAdminsSection() {
+  const { role, canManageAdmins, isLoading: roleLoading, isRoleResolved, refetchRole } = useUserRole();
+  const { user } = useAuth();
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState<AdminMember | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "staff">("staff");
+  const [isInviting, setIsInviting] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Admin list state
+  const [admins, setAdmins] = useState<AdminMember[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
+
+  // Fetch admins from database
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      if (!user) return;
+      
+      setIsLoadingAdmins(true);
+      try {
+        // Fetch user roles
+        const { data: rolesData, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("*");
+
+        if (rolesError) {
+          console.error("Error fetching roles:", rolesError);
+          // Use demo data as fallback
+          setAdmins([
+            { id: "1", email: user?.email || "owner@company.com", role: "owner", addedAt: "Current session" },
+          ]);
+        } else if (rolesData && rolesData.length > 0) {
+          const formattedAdmins: AdminMember[] = rolesData.map(r => ({
+            id: r.id,
+            email: r.invited_email || "Unknown",
+            role: r.role as AppRole,
+            addedAt: new Date(r.created_at).toLocaleDateString(),
+            userId: r.user_id,
+          }));
+          setAdmins(formattedAdmins);
+        } else {
+          // No roles in DB yet - show current user as owner
+          setAdmins([
+            { id: "demo-1", email: user?.email || "owner@company.com", role: "owner", addedAt: "Current session" },
+          ]);
+        }
+
+        // Fetch pending invitations
+        const { data: invitesData, error: invitesError } = await supabase
+          .from("admin_invitations")
+          .select("*")
+          .is("accepted_at", null);
+
+        if (!invitesError && invitesData) {
+          const formattedInvites: PendingInvite[] = invitesData.map(i => ({
+            id: i.id,
+            email: i.email,
+            role: i.role as AppRole,
+            expiresAt: new Date(i.expires_at).toLocaleDateString(),
+          }));
+          setPendingInvites(formattedInvites);
+        }
+      } catch (err) {
+        console.error("Error in fetchAdmins:", err);
+      } finally {
+        setIsLoadingAdmins(false);
+      }
+    };
+
+    fetchAdmins();
+  }, [user]);
+
+  const getRoleIcon = (adminRole: AppRole | null) => {
+    switch (adminRole) {
+      case "owner":
+        return <Crown className="h-4 w-4 text-accent" />;
+      case "admin":
+        return <ShieldCheck className="h-4 w-4 text-primary" />;
+      case "staff":
+        return <Shield className="h-4 w-4 text-muted-foreground" />;
+      default:
+        return <ShieldAlert className="h-4 w-4" />;
+    }
+  };
+
+  const getRoleBadgeStyle = (adminRole: AppRole | null) => {
+    switch (adminRole) {
+      case "owner":
+        return "bg-accent/20 text-accent";
+      case "admin":
+        return "bg-primary/20 text-primary";
+      case "staff":
+        return "bg-muted text-muted-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+  };
+
+  const handleInvite = async () => {
+    if (!inviteEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address to invite.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canManageAdmins) {
+      setPermissionModalOpen(true);
+      return;
+    }
+
+    setIsInviting(true);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    toast({
+      title: "Invitation sent!",
+      description: `${inviteEmail} has been invited as ${inviteRole}.`,
+    });
+    
+    setIsInviting(false);
+    setIsInviteModalOpen(false);
+    setInviteEmail("");
+    setInviteRole("staff");
+  };
+
+  const handleRemove = async () => {
+    if (!selectedAdmin) return;
+
+    if (!canManageAdmins) {
+      setPermissionModalOpen(true);
+      return;
+    }
+
+    if (selectedAdmin.role === "owner") {
+      toast({
+        title: "Cannot remove owner",
+        description: "The owner account cannot be removed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRemoving(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    toast({
+      title: "Admin removed",
+      description: `${selectedAdmin.email} has been removed from the team.`,
+    });
+    
+    setIsRemoving(false);
+    setIsRemoveModalOpen(false);
+    setSelectedAdmin(null);
+  };
+
+  const openRemoveModal = (admin: AdminMember) => {
+    if (!canManageAdmins) {
+      setPermissionModalOpen(true);
+      return;
+    }
+    setSelectedAdmin(admin);
+    setIsRemoveModalOpen(true);
+  };
+
+  const handleRefreshRole = async () => {
+    setIsRefreshing(true);
+    await refetchRole();
+    setIsRefreshing(false);
+    toast({
+      title: "Role refreshed",
+      description: `Current role: ${role}`,
+    });
+  };
+
+  const handleTransferOwnership = async () => {
+    if (!selectedAdmin || selectedAdmin.role !== "admin") {
+      toast({
+        title: "Cannot transfer",
+        description: "You can only transfer ownership to an Admin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTransferring(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    toast({
+      title: "Ownership Transferred!",
+      description: `${selectedAdmin.email} is now the Owner. You are now an Admin.`,
+    });
+    
+    setIsTransferring(false);
+    setIsTransferModalOpen(false);
+    setSelectedAdmin(null);
+  };
+
+  return (
+    <div>Manage Admins Section - Temporarily disabled for debugging</div>
+  );
+}

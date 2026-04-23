@@ -1,0 +1,313 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@layer base {
+  :root {
+    /* Awardscut Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 20 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 10% 10%;
+
+    --primary: 15 53% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 10% 94%;
+    --secondary-foreground: 20 10% 20%;
+
+    --muted: 20 10% 96%;
+    --muted-foreground: 20 10% 45%;
+
+    --accent: 43 80% 55%;
+    --accent-foreground: 20 10% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 10% 90%;
+    --input: 20 10% 90%;
+    --ring: 15 53% 47%;
+
+    --radius: 0.75rem;
+
+    /* Custom Awardscut tokens */
+    --gold: 43 80% 55%;
+    --gold-glow: 43 90% 65%;
+    --terracotta: 15 53% 47%;
+    --terracotta-dark: 15 53% 37%;
+    --terracotta-light: 15 53% 57%;
+    --charcoal: 20 10% 12%;
+    --charcoal-light: 20 10% 18%;
+    
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(20 10% 8%) 0%, hsl(20 10% 15%) 50%, hsl(15 30% 20%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(43 80% 55%) 0%, hsl(35 90% 60%) 100%);
+    --gradient-terracotta: linear-gradient(135deg, hsl(15 53% 47%) 0%, hsl(15 53% 57%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(20 10% 16%) 0%, hsl(20 10% 12%) 100%);
+
+    /* Shadows */
+    --shadow-glow: 0 0 60px -10px hsl(15 53% 47% / 0.4);
+    --shadow-gold-glow: 0 0 40px -10px hsl(43 80% 55% / 0.5);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
+    --shadow-elevated: 0 8px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06);
+
+    --sidebar-background: 20 10% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 15 53% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 10% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 20 10% 20%;
+    --sidebar-ring: 15 53% 47%;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 30 15% 93%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 30 15% 93%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 30 15% 93%;
+
+    --primary: 15 53% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 30 15% 93%;
+
+    --muted: 0 0% 11%;
+    --muted-foreground: 20 8% 62%;
+
+    --accent: 43 80% 55%;
+    --accent-foreground: 20 10% 10%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 15 53% 50%;
+
+    /* Dark mode enhanced tokens */
+    --charcoal: 0 0% 4%;
+    --charcoal-light: 0 0% 9%;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-elevated: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 30 15% 93%;
+    --sidebar-primary: 15 53% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 30 15% 93%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 15 53% 50%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'DM Sans', 'Space Grotesk', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DM Sans', 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+  }
+
+  code, .font-mono {
+    font-family: 'Space Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-gold);
+  }
+
+  .text-gradient-terracotta {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-terracotta);
+  }
+
+  .bg-hero {
+    background: var(--gradient-hero);
+  }
+
+  .bg-gradient-gold {
+    background: var(--gradient-gold);
+  }
+
+  .bg-gradient-terracotta {
+    background: var(--gradient-terracotta);
+  }
+
+  .bg-gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-gold-glow {
+    box-shadow: var(--shadow-gold-glow);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .shadow-card-ac {
+    box-shadow: var(--shadow-card);
+  }
+
+  .glass {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-xl bg-black/20 border border-white/5;
+  }
+}
+
+/* Custom scrollbar — 4px, minimal */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.10);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.20);
+}
+
+/* Top accent stripe */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: hsl(var(--primary));
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Status badges */
+.badge-live {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22C55E;
+}
+
+.badge-idle {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider;
+  background: hsl(var(--muted-foreground) / 0.10);
+  color: hsl(var(--muted-foreground));
+}
+
+.badge-processing {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider;
+  background: rgba(212, 168, 83, 0.15);
+  color: #D4A853;
+}
+
+.badge-gone {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider;
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+}
+
+/* LIVE dot pulse — pure CSS */
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22C55E;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Processing dots animation */
+@keyframes processing-dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+.processing-dots::after {
+  content: '';
+  animation: processing-dots 1.5s infinite;
+}
+
+/* Progress bar animate */
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+.progress-animate {
+  animation: progress-fill 500ms ease-out;
+}
+
+/* Shimmer skeleton */
+@keyframes shimmer-slide {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-slide 1.5s ease-in-out infinite;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .live-dot { animation: none; }
+}
