@@ -1,0 +1,1 @@
+DELETE FROM public.generated_clips WHERE source_video_url LIKE '%samplelib.com%' OR source_video_url LIKE '%sample-30s.mp4%';

@@ -1,0 +1,1 @@
+UPDATE public.stream_rooms SET started_at = now() WHERE status = 'live' AND started_at IS NULL;
